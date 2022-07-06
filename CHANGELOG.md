@@ -1,5 +1,26 @@
 ## TODO
 
+## 2.0.2
+
+* Improved shrinking of dynamic arrays (#775)
+* Added support for deployment of certain contracts or bytecode in specific addresses (#758)
+* Fixed git attribute to support building docker containers in Windows (#773)
+* Fixed crash when the EVM execution triggers more than one query (#760)
+* Added support for detection and handling of ancient solc versions (#675)
+* Added explicit static flag and removed pthread one from ghc options (#768)
+ 
+## 2.0.1
+
+* Optimized stateless mutators (#747)
+* Expanded and improved command-line help (#741)
+* Added dapptest support: compatibility mode to run foundry and dapptool fuzz tests (#733, #745)
+* Generate more values closer to the maximum (#736) 
+* Fix TERMINFO path for Nix release builds (#731)
+* Mitigate large memory consumption when replaying corpus (#725)
+* Fix --shrink-limit to change shrink limit instead of test limit (#728)
+* Correctly show lines with multiple types of coverage
+* Restored nix support (#717, #743)
+
 ## 2.0.0
 
 * Refactored test internal data structures and code

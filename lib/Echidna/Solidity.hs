@@ -30,12 +30,12 @@ import Echidna.Exec               (execTx, initialVM)
 import Echidna.Events             (EventMap)
 import Echidna.Test               (createTests, isAssertionMode, isPropertyMode, isDapptestMode)
 import Echidna.RPC                (loadEthenoBatch)
-import Echidna.Types.Solidity
+import Echidna.Types.Solidity     hiding (deployBytecodes, deployContracts)
 import Echidna.Types.Signature    (ContractName, FunctionHash, SolSignature, SignatureMap, getBytecodeMetadata)
 import Echidna.Types.Tx           (TxConf, basicTx, createTxWithValue, unlimitedGasPerBlock, initialTimestamp, initialBlockNumber)
 import Echidna.Types.Test         (TestConf(..), EchidnaTest(..))
 import Echidna.Types.World        (World(..))
-import Echidna.Fetch              (deployContracts)
+import Echidna.Fetch              (deployContracts, deployBytecodes)
 import Echidna.Processor
 
 import EVM hiding (contracts, path)
@@ -212,23 +212,26 @@ loadSpecified name cs = do
     Nothing    -> do
       -- library deployment
       vm0 <- deployContracts (zip [addrLibrary ..] ls) d blank
-      -- additional contracts deployment
-      --(ctd, _) <- if null atd then return ([], []) else contracts $ NE.fromList $ map show atd
-      --let mainContract = head $ map (\x -> head $ T.splitOn "." $ last $ T.splitOn "-" $ head $ T.splitOn ":" (view contractName x)) ctd
-      --let ctd' = filter (\x -> (last $ T.splitOn ":" (view contractName x)) == mainContract) ctd
-      --vm' <- deployContracts (zip atd ctd') ca vm
+
+      -- additional contract deployment (by name)
+      cs' <- mapM ((choose cs . Just) . T.pack . snd) dpc
+      vm1 <- deployContracts (zip (map fst dpc) cs') d vm0
+
+      -- additional contract deployment (bytecode)
+      vm2 <- deployBytecodes dpb d vm1
+
       -- main contract deployment
       let deployment = execTx $ createTxWithValue bc d ca (fromInteger unlimitedGasPerBlock) (w256 $ fromInteger balc) (0, 0)
-      vm1 <- execStateT deployment vm0
-      when (isNothing $ currentContract vm1) (throwM $ DeploymentFailed ca)
+      vm3 <- execStateT deployment vm2
+      when (isNothing $ currentContract vm3) (throwM $ DeploymentFailed ca)
 
       -- Run
       let transaction = execTx $ uncurry basicTx setUpFunction d ca (fromInteger unlimitedGasPerBlock) (0, 0)
-      vm2 <- if isDapptestMode tm && setUpFunction `elem` abi then execStateT transaction vm1 else return vm1
+      vm4 <- if isDapptestMode tm && setUpFunction `elem` abi then execStateT transaction vm3 else return vm3
 
-      case vm2 ^. result of
+      case vm4 ^. result of
         Just (VMFailure _) -> throwM SetUpCallFailed
-        _                  -> return (vm2, unions $ map (view eventMap) cs, neFuns, fst <$> tests, abiMapping)
+        _                  -> return (vm4, unions $ map (view eventMap) cs, neFuns, fst <$> tests, abiMapping)
 
   where choose []    _        = throwM NoContracts
         choose (c:_) Nothing  = return c
@@ -261,8 +264,16 @@ prepareForTest (vm, em, a, ts, m) c si = do
       ps = filterResults c $ payableFunctions si
       as = if isAssertionMode tm then filterResults c $ asserts si else []
       cs = if isDapptestMode tm then [] else filterResults c (constantFunctions si) \\ as
-      (hm, lm) = prepareHashMaps cs as m
+      (hm, lm) = prepareHashMaps cs as $ filterFallbacks c (fallbackDefined si) (receiveDefined si) m
   pure (vm, World s hm lm ps em, createTests tm td ts r a')
+
+
+filterFallbacks :: Maybe ContractName -> [ContractName] -> [ContractName] -> SignatureMap -> SignatureMap
+filterFallbacks _ [] [] sm = M.map f sm 
+  where f ss = NE.fromList $ case NE.filter (/= fallback) ss of 
+                []  -> [fallback] -- No other alternative
+                ss' -> ss' 
+filterFallbacks _ _ _ sm = sm
 
 -- this limited variant is used only in tests
 prepareForTest' :: (MonadReader x m, Has SolConf x)
