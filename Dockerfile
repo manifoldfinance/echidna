@@ -61,5 +61,8 @@ COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna
 COPY --from=builder-python3 /venv /venv
 ENV PATH="$PATH:/venv/bin"
 ENV PYTHONUNBUFFERED 1
-EXPOSE 
+EXPOSE 8545/tcp
+EXPOSE 8545/udp
+EXPOSE 8180
+EXPOSE 3001/tcp
 ENTRYPOINT ["/usr/local/bin/echidna-test"]
