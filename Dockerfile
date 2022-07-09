@@ -20,8 +20,7 @@ RUN set -eux; \
     libsecp256k1-dev \
     libssl-dev \
     software-properties-common \
-    sudo \
-    dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+    sudo; \
     apt-mark auto '.*' > /dev/null; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
@@ -44,7 +43,6 @@ RUN set -eux; \
     python3.9-dev \
     python3.9-venv \
     && rm -rf /var/lib/apt/lists/*; \
-    dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
     apt-mark auto '.*' > /dev/null; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
@@ -62,4 +60,6 @@ FROM gcr.io/distroless/python3-debian11:nonroot AS final
 COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
 COPY --from=builder-python3 /venv /venv
 ENV PATH="$PATH:/venv/bin"
+ENV PYTHONUNBUFFERED 1
+EXPOSE 
 ENTRYPOINT ["/usr/local/bin/echidna-test"]
