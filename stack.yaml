@@ -1,11 +1,19 @@
 resolver: lts-17.14
+docker:
+    enable: true
+    run-args: ["--net=bridge"]
+# If true (the default when using the local Docker Engine), run processes
+# in the Docker container as the same UID/GID as the host.  The ensures
+# that files written by the container are owned by you on the host.
+# When the Docker Engine is remote (accessed by tcp), defaults to false.
+    set-user: true
 
 packages:
 - '.'
 
 extra-deps:
 - git: https://github.com/dapphub/dapptools.git
-  commit: fb9476ded759da44c449eb391cc67bfb0df61112
+  commit: cb2e4cabd7268dd6fad16d0a49e8690160ef40fc
   subdirs:
   - src/hevm
 
