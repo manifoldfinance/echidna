@@ -1,8 +1,7 @@
-
 name: container
 
 on: 
-  # Trigger without any parameters a proactive rebuild 
+  push:
   workflow_dispatch: {}
   workflow_call:
 
