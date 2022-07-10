@@ -51,8 +51,6 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONUNBUFFERED 1
 
-RUN pip3 install --upgrade pip
-
 RUN python3 -m venv /venv && /venv/bin/pip3 install --no-cache-dir slither-analyzer
 
 
