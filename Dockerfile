@@ -44,8 +44,8 @@ RUN set -eux; \
     DEBIAN_FRONTEND=noninteractivea apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
     ca-certificates \
     gcc \
-	; \
-    python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer
+    ; \
+    python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer; \
     && rm -rf /var/lib/apt/lists/*; \
     apt-mark auto '.*' > /dev/null; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
