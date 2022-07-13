@@ -51,8 +51,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONUNBUFFERED 1
 
-RUN python3 -m venv /venv && /venv/bin/pip3 install --no-cache-dir slither-analyzer
-
+RUN python3.9 -m venv /venv && /venv/bin/pip3.9 install --no-cache-dir slither-analyzer
 
 FROM gcr.io/distroless/python3-debian11:nonroot AS final
 COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
