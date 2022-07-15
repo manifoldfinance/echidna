@@ -40,16 +40,18 @@ ENV PIP_NO_CACHE_DIR=1
 ENV PYTHONUNBUFFERED 1
 
 RUN set -eux; \
-    savedAptMark="$(apt-mark showmanual)"; \
-    DEBIAN_FRONTEND=noninteractivea apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
-    ca-certificates \
+# save list of currently installed packages for later so we can clean up
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
     gcc \
-    ; \
-    python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer; \
-    rm -rf /var/lib/apt/lists/*; \
-    apt-mark auto '.*' > /dev/null; \
-    [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
-    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
+    ca-certificates \
+    libcap-dev \
+    libc6-dev \
+    apt-get clean; \
+	rm -rf /var/lib/apt/lists/*;
+    
+RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer;
 
 FROM gcr.io/distroless/python3-debian11:nonroot AS final
 COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
