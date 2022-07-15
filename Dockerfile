@@ -31,7 +31,7 @@ COPY . /echidna/
 
 RUN stack upgrade && stack setup && stack install --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
 
-FROM python:3.8.13-slim-bullseye AS builder-python3
+FROM python:3.8.13-slim-bullseye AS wheel
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PIP_NO_CACHE_DIR=1
@@ -45,13 +45,27 @@ RUN set -eux; \
 	gcc \
 	ca-certificates; \
 	rm -rf /var/lib/apt/lists/*;
-    
-RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer;
+
+RUN pip wheel --wheel-dir=/root/wheels slither-analyzer;
+
+RUN python3 -m venv /venv # && /venv/bin/pip install --no-cache-dir slither-analyzer;
 
 FROM gcr.io/distroless/python3-debian11:nonroot AS final
+
+COPY --from=wheel /root/wheels /root/wheels
+
+# Ignore the Python package index
+# and look for archives in
+# /root/wheels directory
+RUN pip install \
+      --no-index \
+      --find-links=/root/wheels \
+      slither-analyzer
+      
+
 COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
 COPY --from=builder-python3 /venv /venv
-ENV PATH="$PATH:/venv/bin"
+#ENV PATH="$PATH:/venv/bin"
 ENV PYTHONUNBUFFERED 1
 
 EXPOSE 8545/tcp
