@@ -54,8 +54,8 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN python3 -m venv /venv
 # && /venv/bin/pip install --no-cache-dir slither-analyzer;
 
-FROM gcr.io/distroless/python3-debian11:nonroot AS final
-
+#FROM gcr.io/distroless/python3-debian11:nonroot AS final
+FROM python:3.8.13-slim-bullseye AS final
 COPY --from=wheel /root/wheels /root/wheels
 
 # Ignore the Python package index
