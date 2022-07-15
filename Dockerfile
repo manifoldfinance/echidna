@@ -46,7 +46,7 @@ RUN set -eux; \
     gcc \
     ; \
     python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer; \
-    && rm -rf /var/lib/apt/lists/*; \
+    rm -rf /var/lib/apt/lists/*; \
     apt-mark auto '.*' > /dev/null; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
@@ -62,3 +62,13 @@ EXPOSE 8545/udp
 EXPOSE 8180
 EXPOSE 3001/tcp
 ENTRYPOINT ["/usr/local/bin/echidna-test"]
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="Echidna" \
+      org.label-schema.description="Foundry Echidna" \
+      org.label-schema.url="https://manifoldfinance.com" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/mmanifoldfinance/echidna.git" \
+      org.label-schema.vendor="Manifold Finance, Inc." \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
