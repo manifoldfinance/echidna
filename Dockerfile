@@ -43,12 +43,11 @@ RUN set -eux; \
 # save list of currently installed packages for later so we can clean up
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
-    DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
-    gcc \
-    ca-certificates \
-    libcap-dev \
-    libc6-dev \
-    apt-get clean; \
+	DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
+	gcc \
+	ca-certificates \
+	libcap-dev \
+	libc6-dev; \
 	rm -rf /var/lib/apt/lists/*;
     
 RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer;
