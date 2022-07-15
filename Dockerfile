@@ -21,9 +21,7 @@ RUN set -eux; \
     libssl-dev \
     software-properties-common \
     sudo; \
-    apt-mark auto '.*' > /dev/null; \
-    [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
-    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
+    rm -rf /var/lib/apt/lists/*;
     
 WORKDIR /echidna
 COPY .github/scripts/install-libff.sh .
@@ -45,9 +43,7 @@ RUN set -eux; \
 	apt-get update; \
 	DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
 	gcc \
-	ca-certificates \
-	libcap-dev \
-	libc6-dev; \
+	ca-certificates; \
 	rm -rf /var/lib/apt/lists/*;
     
 RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir slither-analyzer;
