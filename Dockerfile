@@ -64,7 +64,7 @@ RUN pip install \
       
 
 COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
-COPY --from=builder-python3 /venv /venv
+COPY --from=wheel /venv /venv
 #ENV PATH="$PATH:/venv/bin"
 ENV PYTHONUNBUFFERED 1
 
