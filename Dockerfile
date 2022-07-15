@@ -42,13 +42,17 @@ RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
 	DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
+	linux-libc-dev \
+	libc6-dev \
 	gcc \
 	ca-certificates; \
 	rm -rf /var/lib/apt/lists/*;
 
-RUN pip wheel --wheel-dir=/root/wheels slither-analyzer;
 
-RUN python3 -m venv /venv # && /venv/bin/pip install --no-cache-dir slither-analyzer;
+RUN pip wheel --wheel-dir=/root/wheels slither-analyzer;
+RUN pip install --no-cache-dir --upgrade pip
+RUN python3 -m venv /venv
+# && /venv/bin/pip install --no-cache-dir slither-analyzer;
 
 FROM gcr.io/distroless/python3-debian11:nonroot AS final
 
