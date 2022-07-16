@@ -24,8 +24,14 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*;
     
 WORKDIR /echidna
-COPY .github/scripts/install-libff.sh .
-RUN install-libff.sh
+
+RUN git clone https://github.com/scipr-lab/libff --recursive && cd libff; \
+    git submodule init && git submodule update && git checkout v0.2.1; \
+    ARGS="-DCMAKE_INSTALL_PREFIX=$PREFIX -DWITH_PROCPS=OFF" CXXFLAGS="" \
+    mkdir -p build && cd build; \
+    CXXFLAGS="-fPIC $CXXFLAGS" cmake $ARGS .. \
+    make && make install;
+    
 RUN curl -sSL https://get.haskellstack.org/ | sh
 COPY . /echidna/
 
