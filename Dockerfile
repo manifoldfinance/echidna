@@ -12,6 +12,7 @@ RUN set -eux; \
     libgmp-dev \
     build-essential \
     dpkg-sig \
+    git \
     libcap-dev \
     libc6-dev \
     libgmp-dev \
