@@ -7,6 +7,7 @@ RUN set -eux; \
     savedAptMark="$(apt-mark showmanual)"; \
     DEBIAN_FRONTEND=noninteractivea apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
     cmake \
+    make \
     curl \
     libbz2-dev \
     libgmp-dev \
@@ -28,9 +29,10 @@ WORKDIR /echidna
 
 RUN git clone https://github.com/scipr-lab/libff --recursive && cd libff; \
     git submodule init && git submodule update && git checkout v0.2.1; \
+    mkdir -p /echidna/libff/build/make; \
+    mkdir -p build/make && cd build; \
     ARGS="-DCMAKE_INSTALL_PREFIX=$PREFIX -DWITH_PROCPS=OFF" CXXFLAGS="" \
-    mkdir -p build && cd build; \
-    CXXFLAGS="-fPIC $CXXFLAGS" cmake $ARGS .. \
+    CXXFLAGS="-fPIC $CXXFLAGS" cmake $ARGS .. ; \
     make && make install;
     
 RUN curl -sSL https://get.haskellstack.org/ | sh
