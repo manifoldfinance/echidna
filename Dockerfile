@@ -16,6 +16,7 @@ RUN set -eux; \
     git \
     libcap-dev \
     libc6-dev \
+    libprocps-dev \
     libgmp-dev \
     libbz2-dev \
     libreadline-dev \
