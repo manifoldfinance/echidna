@@ -6,7 +6,7 @@ ENV LD_LIBRARY_PATH=/usr/local/lib PREFIX=/usr/local HOST_OS=Linux
 RUN export DEBIAN_FRONTEND=noninteractive
 
 RUN set -eux; \
-    apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
+ apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
     cmake \
     make \
     curl \
@@ -24,11 +24,10 @@ RUN set -eux; \
     libsecp256k1-dev \
     libssl-dev \
     software-properties-common \
-    sudo apt-get install build-essential \
     libboost-all-dev \
     libgmp3-dev \
     libssl-dev \
-    libprocps3-dev \
+    libprocps-dev \
     pkg-config \
     libsodium-dev \
     libffi-dev \
