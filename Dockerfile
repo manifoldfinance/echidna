@@ -49,7 +49,7 @@ RUN git clone https://github.com/scipr-lab/libff --recursive && cd libff; \
 RUN curl -sSL https://get.haskellstack.org/ | sh
 COPY . /echidna/
 
-RUN stack upgrade && stack setup && stack install --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
+RUN stack setup && stack install --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
 
 FROM python:3.8.13-slim-bullseye AS wheel
 
