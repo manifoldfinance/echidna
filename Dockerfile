@@ -6,7 +6,6 @@ ENV LD_LIBRARY_PATH=/usr/local/lib PREFIX=/usr/local HOST_OS=Linux
 RUN export DEBIAN_FRONTEND=noninteractive
 
 RUN set -eux; \
-    apt-get update; \
     apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
     cmake \
     make \
