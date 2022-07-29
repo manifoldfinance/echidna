@@ -33,9 +33,13 @@ RUN set -eux; \
     libffi-dev \
     zlib1g-dev \
     netbase \
+    libreadline-dev \
     sudo; \
     rm -rf /var/lib/apt/lists/*;
     
+RUN curl -sSL https://get.haskellstack.org/ | sh
+
+COPY . /echidna/
 WORKDIR /echidna
 
 RUN git clone https://github.com/scipr-lab/libff --recursive && cd libff; \
@@ -45,10 +49,6 @@ RUN git clone https://github.com/scipr-lab/libff --recursive && cd libff; \
     ARGS="-DCMAKE_INSTALL_PREFIX=$PREFIX -DWITH_PROCPS=OFF" CXXFLAGS="" \
     CXXFLAGS="-fPIC $CXXFLAGS" cmake $ARGS .. ; \
     make && make install;
-    
-RUN curl -sSL https://get.haskellstack.org/ | sh
-
-COPY . /echidna/
 
 ENV PATH="$PATH:/root/.local/bin"
 RUN stack setup
@@ -79,6 +79,9 @@ RUN python3 -m venv /venv
 
 #FROM gcr.io/distroless/python3-debian11:nonroot AS final
 FROM python:3.8.13-slim-bullseye AS final
+WORKDIR /root
+ENV PREFIX=/usr/local HOST_OS=Linux
+
 COPY --from=wheel /root/wheels /root/wheels
 
 # Ignore the Python package index
@@ -86,18 +89,25 @@ COPY --from=wheel /root/wheels /root/wheels
 # /root/wheels directory
 RUN pip install --no-index --find-links=/root/wheels slither-analyzer
       
-
-COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
+COPY --from=builder /root/.local/bin/echidna-test /root/.local/bin/echidna-test
+#COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
 COPY --from=wheel /venv /venv
 #ENV PATH="$PATH:/venv/bin"
 ENV PYTHONUNBUFFERED 1
+
+RUN apt-get -y -qq locales-all locales
 
 EXPOSE 8545/tcp
 EXPOSE 8545/udp
 EXPOSE 8180
 EXPOSE 3001/tcp
-ENTRYPOINT ["/usr/local/bin/echidna-test"]
 
+
+RUN update-locale LANG=en_US.UTF-8 && locale-gen en_US.UTF-8
+ENV PATH=$PATH:/root/.local/bin LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
+CMD ["/bin/bash"]
+
+#ENTRYPOINT ["/usr/local/bin/echidna-test"]
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="Echidna" \
       org.label-schema.description="Foundry Echidna" \
