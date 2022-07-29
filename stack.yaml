@@ -1,6 +1,6 @@
 resolver: lts-17.14
 docker:
-    enable: true
+    enable: false
     run-args: ["--net=bridge"]
 # If true (the default when using the local Docker Engine), run processes
 # in the Docker container as the same UID/GID as the host.  The ensures
