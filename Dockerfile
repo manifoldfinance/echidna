@@ -47,9 +47,12 @@ RUN git clone https://github.com/scipr-lab/libff --recursive && cd libff; \
     make && make install;
     
 RUN curl -sSL https://get.haskellstack.org/ | sh
+
 COPY . /echidna/
 
-RUN stack setup && stack install --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
+ENV PATH="$PATH:/root/.local/bin"
+RUN stack setup
+RUN stack install --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
 
 FROM python:3.8.13-slim-bullseye AS wheel
 
@@ -81,10 +84,7 @@ COPY --from=wheel /root/wheels /root/wheels
 # Ignore the Python package index
 # and look for archives in
 # /root/wheels directory
-RUN pip install \
-      --no-index \
-      --find-links=/root/wheels \
-      slither-analyzer
+RUN pip install --no-index --find-links=/root/wheels slither-analyzer
       
 
 COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
