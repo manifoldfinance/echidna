@@ -89,8 +89,7 @@ COPY --from=wheel /root/wheels /root/wheels
 # /root/wheels directory
 RUN pip install --no-index --find-links=/root/wheels slither-analyzer
       
-COPY --from=builder /root/.local/bin/echidna-test /root/.local/bin/echidna-test
-#COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
+COPY --from=builder-echidna /root/.local/bin/echidna-test /root/.local/bin/echidna-test
 COPY --from=wheel /venv /venv
 #ENV PATH="$PATH:/venv/bin"
 ENV PYTHONUNBUFFERED 1
