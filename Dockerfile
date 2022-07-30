@@ -92,21 +92,26 @@ RUN pip install --no-index --find-links=/root/wheels slither-analyzer
 COPY --from=builder-echidna /root/.local/bin/echidna-test /root/.local/bin/echidna-test
 COPY --from=wheel /venv /venv
 #ENV PATH="$PATH:/venv/bin"
-ENV PYTHONUNBUFFERED 1
+
 
 RUN apt-get -y -qq locales-all locales
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV PYTHONUNBUFFERED 1
+ENV PATH=$PATH:/root/.local/bin LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
 
 EXPOSE 8545/tcp
 EXPOSE 8545/udp
 EXPOSE 8180
 EXPOSE 3001/tcp
+ENTRYPOINT ["/usr/local/bin/echidna-test"]
+#CMD ["/bin/bash"]
 
 
-RUN update-locale LANG=en_US.UTF-8 && locale-gen en_US.UTF-8
-ENV PATH=$PATH:/root/.local/bin LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
-CMD ["/bin/bash"]
-
-#ENTRYPOINT ["/usr/local/bin/echidna-test"]
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="Echidna" \
       org.label-schema.description="Foundry Echidna" \
