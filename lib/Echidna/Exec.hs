@@ -12,13 +12,21 @@ import Control.Monad.Catch (Exception, MonadThrow(..))
 import Control.Monad.State.Strict (MonadState, execState, execState)
 import Data.Has (Has(..))
 import Data.Maybe (fromMaybe)
+import System.Process (readProcessWithExitCode)
+import System.IO.Unsafe (unsafePerformIO)
+
 import EVM
-import EVM.Exec (exec, vmForEthrunCreation)
-import EVM.Types (Buffer(..), Word)
-import EVM.Symbolic (litWord)
+import EVM.Exec (exec, ethrunAddress)
+import EVM.Types (Buffer(..), hexText)
+import EVM.Symbolic (litWord, litAddr)
+import EVM.FeeSchedule (berlin)
+import EVM.Concrete (createAddress)
+import EVM.ABI
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.Vector as V
+import qualified Data.Text as T
 
 import Echidna.Transaction
 import Echidna.Types.Buffer (viewBuffer)
@@ -110,6 +118,13 @@ checkAndHandleQuery vmBeforeTx vmResult' onErr executeTx tx' gasLeftBeforeTx gas
         hasLens %= execState (continuation 0)
         continueAfterQuery
 
+      -- Execute a FFI call
+      Just (PleaseDoFFI (cmd : args) continuation) -> do
+        -- WARNING: this uses unsafePerformIO to avoid using IO here explicitely
+        let (_, stdout, _) = unsafePerformIO $ readProcessWithExitCode cmd args ""
+        hasLens %= execState (continuation $ encodeAbiValue $ AbiTuple (V.fromList [AbiBytesDynamic . hexText . T.pack $ stdout]))
+        continueAfterQuery
+
       -- No queries to answer
       _ -> do
         handleErrorsAndConstruction onErr vmResult' vmBeforeTx tx'
@@ -187,7 +202,36 @@ execTxWithCov memo l = do
       bc <- viewBuffer buffer
       pure $ lookupBytecodeMetadata memo bc
 
-initialVM :: VM
-initialVM = vmForEthrunCreation mempty & block . timestamp .~ litWord initialTimestamp
-                                       & block . number .~ initialBlockNumber
-                                       & env . contracts .~ mempty       -- fixes weird nonce issues
+vmForEthrunCreation :: Bool -> VM
+vmForEthrunCreation ffi =
+  makeVm $ VMOpts
+    { vmoptContract = initialContract (InitCode (ConcreteBuffer mempty))
+    , vmoptCalldata = (mempty, 0)
+    , vmoptValue = 0
+    , vmoptAddress = createAddress ethrunAddress 1
+    , vmoptCaller = litAddr ethrunAddress
+    , vmoptOrigin = ethrunAddress
+    , vmoptCoinbase = 0
+    , vmoptNumber = 0
+    , vmoptTimestamp = 0
+    , vmoptBlockGaslimit = 0
+    , vmoptGasprice = 0
+    , vmoptDifficulty = 0
+    , vmoptGas = 0xffffffffffffffff
+    , vmoptGaslimit = 0xffffffffffffffff
+    , vmoptBaseFee = 0
+    , vmoptPriorityFee = 0
+    , vmoptMaxCodeSize = 0xffffffff
+    , vmoptSchedule = berlin
+    , vmoptChainId = 1
+    , vmoptCreate = False
+    , vmoptStorageModel = ConcreteS
+    , vmoptTxAccessList = mempty
+    , vmoptAllowFFI = ffi
+    } 
+
+initialVM :: Bool -> VM
+initialVM ffi = vmForEthrunCreation ffi 
+  & block . timestamp .~ litWord initialTimestamp
+  & block . number .~ initialBlockNumber
+  & env . contracts .~ mempty       -- fixes weird nonce issues

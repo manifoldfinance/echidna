@@ -1,22 +1,65 @@
-FROM ubuntu:bionic AS builder
+# syntax=docker/dockerfile-upstream:master-experimental
+FROM debian:bullseye-20220622 AS builder-echidna
+
 ENV LD_LIBRARY_PATH=/usr/local/lib PREFIX=/usr/local HOST_OS=Linux
-RUN apt-get update && apt-get -y upgrade && apt-get install -y sudo git cmake curl libgmp-dev libssl-dev libbz2-dev libreadline-dev software-properties-common libsecp256k1-dev && apt-get clean
+
+RUN set -eux; \
+    savedAptMark="$(apt-mark showmanual)"; \
+    DEBIAN_FRONTEND=noninteractivea apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
+    cmake \
+    curl \
+    libbz2-dev \
+    libgmp-dev \
+    build-essential \
+    dpkg-sig \
+    libcap-dev \
+    libc6-dev \
+    libgmp-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsecp256k1-dev \
+    libssl-dev \
+    software-properties-common \
+    sudo \
+    dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+    apt-mark auto '.*' > /dev/null; \
+    [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
+    
+WORKDIR /echidna
+COPY .github/scripts/install-libff.sh .
+RUN install-libff.sh
 RUN curl -sSL https://get.haskellstack.org/ | sh
 COPY . /echidna/
-WORKDIR /echidna
-RUN .github/scripts/install-libff.sh
+
 RUN stack upgrade && stack setup && stack install --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
 
-FROM ubuntu:bionic AS final
-ENV PREFIX=/usr/local HOST_OS=Linux
-WORKDIR /root
-COPY --from=builder /root/.local/bin/echidna-test /root/.local/bin/echidna-test
-COPY .github/scripts/install-crytic-compile.sh .github/scripts/install-crytic-compile.sh
-RUN apt-get update && apt-get -y upgrade && apt-get install -y wget locales-all locales python3.6 python3-pip python3-setuptools && apt-get clean
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.6 10
-RUN wget https://github.com/ethereum/solidity/releases/download/v0.4.25/solc-static-linux && chmod +x solc-static-linux && mv solc-static-linux /usr/bin/solc-0.4.25
-RUN wget https://github.com/ethereum/solidity/releases/download/v0.5.7/solc-static-linux && chmod +x solc-static-linux && mv solc-static-linux /usr/bin/solc
-RUN .github/scripts/install-crytic-compile.sh
-RUN update-locale LANG=en_US.UTF-8 && locale-gen en_US.UTF-8
-ENV PATH=$PATH:/root/.local/bin LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
-CMD ["/bin/bash"]
+FROM debian:bullseye-20220622 AS builder-python3
+
+RUN set -eux; \
+    savedAptMark="$(apt-mark showmanual)"; \
+    DEBIAN_FRONTEND=noninteractivea apt-get update && apt-get install -qqy --assume-yes --no-install-recommends \
+    ca-certificates \
+    gcc \
+    python3.9-dev \
+    python3.9-venv \
+    && rm -rf /var/lib/apt/lists/*; \
+    dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+    apt-mark auto '.*' > /dev/null; \
+    [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false;
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PYTHONUNBUFFERED 1
+
+RUN pip3 install --upgrade pip
+
+RUN python3 -m venv /venv && /venv/bin/pip3 install --no-cache-dir slither-analyzer
+
+
+FROM gcr.io/distroless/python3-debian11:nonroot AS final
+COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna-test
+COPY --from=builder-python3 /venv /venv
+ENV PATH="$PATH:/venv/bin"
+ENTRYPOINT ["/usr/local/bin/echidna-test"]
