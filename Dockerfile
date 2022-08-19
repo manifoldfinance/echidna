@@ -91,6 +91,9 @@ RUN pip install --no-index --find-links=/root/wheels slither-analyzer
       
 COPY --from=builder-echidna /root/.local/bin/echidna-test /root/.local/bin/echidna-test
 COPY --from=wheel /venv /venv
+COPY .github/scripts/install-crytic-compile.sh .github/scripts/install-crytic-compile.sh
+RUN wget https://github.com/ethereum/solidity/releases/download/v0.8.15/solc-static-linux && chmod +x solc-static-linux && mv solc-static-linux /usr/bin/solc
+RUN .github/scripts/install-crytic-compile.sh
 #ENV PATH="$PATH:/venv/bin"
 
 
