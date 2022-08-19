@@ -171,7 +171,7 @@ loadSpecified name cs = do
     unless q . putStrLn $ "Analyzing contract: " <> c ^. contractName . unpacked
 
   -- Local variables
-  SolConf ca d ads bala balc mcs pref _ _ libs _ fp dpc dpb ma tm _ fs <- view hasLens
+  SolConf ca d ads bala balc mcs pref _ _ libs _ fp ma tm _ ffi fs <- view hasLens
   TestConf _ _ <- view hasLens
 
   -- generate the complete abi mapping
@@ -192,8 +192,8 @@ loadSpecified name cs = do
 
   -- Set up initial VM, either with chosen contract or Etheno initialization file
   -- need to use snd to add to ABI dict
-  blank' <- maybe (pure (initialVM & block . gaslimit .~ fromInteger unlimitedGasPerBlock & block . maxCodeSize .~ w256 (fromInteger mcs)))
-                  loadEthenoBatch
+  blank' <- maybe (pure (initialVM ffi & block . gaslimit .~ fromInteger unlimitedGasPerBlock & block . maxCodeSize .~ w256 (fromInteger mcs)))
+                  (loadEthenoBatch ffi)
                   fp
   let blank = populateAddresses (NE.toList ads |> d) bala blank'
 
