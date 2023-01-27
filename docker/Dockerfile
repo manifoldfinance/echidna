@@ -1,7 +1,10 @@
-FROM ubuntu:focal AS builder-echidna
+# 
+# https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2004-Readme.md#cached-docker-images
+FROM ubuntu@sha256:0e0402cd13f68137edb0266e1d2c682f217814420f2d43d300ed8f65479b14fb AS builder-echidna
+
 ENV LD_LIBRARY_PATH=/usr/local/lib PREFIX=/usr/local HOST_OS=Linux
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-suggests --no-install-recommends \
+RUN set -eux; \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
         cmake \
         curl \
         git \
@@ -11,7 +14,9 @@ RUN apt-get update && \
         libsecp256k1-dev \
         libssl-dev \
         software-properties-common \
-        sudo
+        sudo; \
+        rm -rf /var/lib/apt/lists/*;
+
 RUN curl -sSL https://get.haskellstack.org/ | sh
 COPY . /echidna/
 WORKDIR /echidna
@@ -19,9 +24,9 @@ RUN .github/scripts/install-libff.sh
 RUN stack upgrade && stack setup && stack install --flag echidna:static --extra-include-dirs=/usr/local/include --extra-lib-dirs=/usr/local/lib
 
 
-FROM ubuntu:focal AS builder-python3
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-suggests --no-install-recommends \
+FROM ubuntu@sha256:0e0402cd13f68137edb0266e1d2c682f217814420f2d43d300ed8f65479b14fb AS builder-python3
+RUN set -eux; \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qqy --assume-yes --no-install-recommends \
         gcc \
         python3.8-dev \
         python3.8-venv
@@ -39,10 +44,11 @@ ENV PATH="$PATH:/venv/bin"
 ENTRYPOINT [ "/usr/local/bin/solc-install", "/usr/local/bin/echidna-test" ]
 
 
-FROM ubuntu:focal AS final-ubuntu
+FROM ubuntu@sha256:0e0402cd13f68137edb0266e1d2c682f217814420f2d43d300ed8f65479b14fb AS final-ubuntu
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-suggests --no-install-recommends \
         ca-certificates \
+        git \
         curl \
         python3 \
         python3-distutils \
@@ -53,3 +59,16 @@ COPY --from=builder-echidna /root/.local/bin/echidna-test /usr/local/bin/echidna
 COPY --from=builder-python3 /venv /venv
 ENV LANG="C.UTF-8"
 ENV PATH="$PATH:/venv/bin"
+
+ARG VERSION="local"
+ARG REVISION="none"
+ARG GITHUB_WORKFLOW="none"
+ARG GITHUB_RUN_ID="none"
+ARG WORKSPACE_DIR=/workspace
+
+
+# see https://github.blog/2022-04-12-git-security-vulnerability-announced/
+RUN git config --global --add safe.directory ${WORKSPACE_DIR}
+
+LABEL github.workflow=${GITHUB_WORKFLOW}
+LABEL github.runid=${GITHUB_RUN_ID}
